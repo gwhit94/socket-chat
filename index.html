@@ -11,6 +11,9 @@
       #messages { list-style-type: none; margin: 0; padding: 0; }
       #messages li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
+      #messages li.connected { background: #080; }
+      #messages li.disconnected { background: #F00; }
+      #messages li.username { background: #FFB6C1; }
     </style>
   </head>
   <body>
@@ -24,20 +27,53 @@
     <script>
       $(function () {
         var socket = io();
+        // Username can enter their name and it is sent to server
+        var thisUser = "";
+        enterName();
+        function enterName(){
+          var newUser = window.prompt("Please enter your name", "");
+          if (newUser == null || newUser == ""){
+            enterName();
+            return;
+          } else {
+            thisUser = newUser;
+            socket.emit('new user', newUser);
+            newUser = null;
+          };
+        };
+        // submit form emits chat message to server
         $('form').submit(function(){
-          socket.emit('chat message', $('#m').val());
+          var inputText = $('#m').val();
+          console.log(socket.id);
+          var msg = {
+            name: thisUser,
+            type: "message",
+            text: inputText,
+            id: socket.id,
+            date: Date.now()
+          };
+          msg = JSON.stringify(msg)
+          socket.emit('chat message', msg);
           $('#m').val('');
           return false;
         });
+        // Prints connection message
         socket.on('user connected', function(connected){
-          $('#connections').append($('<li>').text(connected));
+          $('#messages').append($(`<li class="connected">`).text(connected));
         });
+        // Prints Chat Message
+        socket.on('chat message', function(received){
+          var msg = JSON.parse(received);
+          var name = msg.name;
+          var text = msg.text;
+          var date = msg.date;
+          $('#messages').append($('<li>').text( date + ':  ' + name + ': ' + text));
+        });
+        // Prints DC message
         socket.on('user disconnected', function(disconnected){
-          $('#connections').append($('<li>').text(disconnected));
+          $('#messages').append($(`<li class="disconnected">`).text(disconnected));
         });
-        socket.on('chat message', function(msg){
-          $('#messages').append($('<li>').text(msg));
-        });
+
       });
     </script>
   </body>
