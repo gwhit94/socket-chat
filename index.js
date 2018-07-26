@@ -10,8 +10,8 @@ app.get('/', function(req, res){
 });
 
 // Broadcast a message to connected users when someone connects or disconnects
-// - Add support for nicknames
-// - Don’t send the same message to the user that sent it himself. Instead, append the message directly as soon as he presses enter.
+// - Add support for nicknames ✓
+// - Don’t send the same message to the user that sent it himself. Instead, append the message directly as soon as he presses enter. ✓
 // - Add “{user} is typing” functionality
 // - Show who’s online
 io.on('connection', function(socket){
@@ -29,12 +29,17 @@ io.on('connection', function(socket){
     io.emit('user connected', `${newUser} joined the chat!`);
   });
 
+  // Tells all non sending clients another user is typing
+  socket.on('userTyping', function(){
+    socket.broadcast.emit('userTyping');
+  });
+
   socket.broadcast.emit('hi');
   // Receives then Sends chat messages sent from one client back to client side
   socket.on('chat message', function(received){
     var msg = JSON.parse(received);
     var time = new Date(msg.date)
-    var serverTime = time.toLocaleTimeString();
+    var serverTime = time.toLocaleTimeString('en-US');
     msg.date = serverTime;
     var text = msg.text;
     console.log( serverTime + ': message: ' + text);
@@ -43,8 +48,15 @@ io.on('connection', function(socket){
   });
   // Alerts console and client chat that a user has disconnected
   socket.on('disconnect', function(){
-    console.log('user disconnected');
-    io.emit('user disconnected', `A User (ID ${socket.id}) has left the chat!`);
+    // loops through onlineUsers to find the name of the user disconnecting
+    for (var i = 0; i < onlineUsers.length; i++) {
+      if (onlineUsers[i].id == socket.id) {
+        var dcUser = onlineUsers[i].username;
+      }
+    }
+    // tells the console the user and id of who left then tells client who left
+    console.log(`User ${dcUser} (ID ${socket.id}) has left the chat!`);
+    io.emit('user disconnected', `${dcUser} has left the chat!`);
   });
   io.emit('some event', { for: 'everyone' });
 

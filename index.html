@@ -8,6 +8,7 @@
       form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
       form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
       form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #typing { display: none; }
       #messages { list-style-type: none; margin: 0; padding: 0; }
       #messages li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
@@ -17,10 +18,10 @@
     </style>
   </head>
   <body>
-    <ul id="connections"></ul>
+    <ul id="typing">A USER IS TYPING</ul>
     <ul id="messages"></ul>
     <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
+      <input id="m" autocomplete="off" ><button>Send</button>
     </form>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
@@ -41,6 +42,29 @@
             newUser = null;
           };
         };
+        // User is typing functionality, probably more verbose than it could be but it works!
+        $('form').keydown(function userTyping(){
+          socket.emit('userTyping', typing);
+        });
+        function typingHide(){
+          var typing = document.getElementById('typing');
+          typing.style.display = "none";
+        };
+        function typingDisplay(){
+          var typing = document.getElementById('typing');
+          typing.style.display = "block";
+        };
+        var hide;
+        socket.on('userTyping', function(typing){
+          clearTimeout(hide)
+          typingDisplay();
+          // redundant I know, but it wasnt working just calling typingHide as a function within setTimeout :(
+          hide = setTimeout(function(){
+            var typing = document.getElementById('typing');
+            typing.style.display = "none";
+          }, 3000);
+        });
+
         // submit form emits chat message to server
         $('form').submit(function(){
           var inputText = $('#m').val();
@@ -52,6 +76,9 @@
             id: socket.id,
             date: Date.now()
           };
+          var clientTime = new Date(msg.date);
+          clientTime = clientTime.toLocaleTimeString('en-US');
+          $('#messages').append($('<li>').text( clientTime + ':  ' + msg.name + ': ' + msg.text));
           msg = JSON.stringify(msg)
           socket.emit('chat message', msg);
           $('#m').val('');
@@ -63,11 +90,18 @@
         });
         // Prints Chat Message
         socket.on('chat message', function(received){
+          typingHide();
           var msg = JSON.parse(received);
           var name = msg.name;
           var text = msg.text;
           var date = msg.date;
-          $('#messages').append($('<li>').text( date + ':  ' + name + ': ' + text));
+          var id = msg.id;
+          // Only will print messages sent by other users, I later found out about broadcast on server side so this could be omitted
+          if (msg.id != socket.id){
+            $('#messages').append($('<li>').text( date + ':  ' + name + ': ' + text));
+          } else {
+            return;
+          }
         });
         // Prints DC message
         socket.on('user disconnected', function(disconnected){
