@@ -17,6 +17,16 @@ app.get('/', function(req, res){
 io.on('connection', function(socket){
   // Alerts console that an unnamed user has connected and displays their ID
   console.log(`An unnamed User (ID ${socket.id}) has connected.`);
+
+  // sends an update of the onlineUser list to the client
+  function listUpdate(){
+    var userList = [];
+    onlineUsers.forEach(function(user){
+      userList.push(user.username);
+    });
+    io.emit('userList update', userList);
+  }
+
   // When the User creates a user name it is passed here with their unique ID
   socket.on('new user', function(newUser){
     var onlineUser = {
@@ -27,6 +37,7 @@ io.on('connection', function(socket){
     // Alerts the chat and the server console of the Username chosen by the user
     console.log(newUser + " joined the chat!");
     io.emit('user connected', `${newUser} joined the chat!`);
+    listUpdate();
   });
 
   // Tells all non sending clients another user is typing
@@ -52,14 +63,16 @@ io.on('connection', function(socket){
     for (var i = 0; i < onlineUsers.length; i++) {
       if (onlineUsers[i].id == socket.id) {
         var dcUser = onlineUsers[i].username;
+        // removes the user from the Online user list
+        onlineUsers.splice(i, 1);
       }
     }
     // tells the console the user and id of who left then tells client who left
     console.log(`User ${dcUser} (ID ${socket.id}) has left the chat!`);
     io.emit('user disconnected', `${dcUser} has left the chat!`);
+    listUpdate();
   });
   io.emit('some event', { for: 'everyone' });
-
 });
 
 http.listen(3000, function(){
