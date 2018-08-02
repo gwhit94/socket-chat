@@ -2,23 +2,23 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
-var chatHistory = [];
 var onlineUsers = [];
 
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
 
-// Broadcast a message to connected users when someone connects or disconnects
+// Broadcast a message to connected users when someone connects or disconnects ✓
 // - Add support for nicknames ✓
 // - Don’t send the same message to the user that sent it himself. Instead, append the message directly as soon as he presses enter. ✓
-// - Add “{user} is typing” functionality
-// - Show who’s online
+// - Add “{user} is typing” functionality ✓
+// - Show who’s online ✓
 io.on('connection', function(socket){
   // Alerts console that an unnamed user has connected and displays their ID
   console.log(`An unnamed User (ID ${socket.id}) has connected.`);
 
   // sends an update of the onlineUser list to the client
+  // called when a user connects and creates a name or disconnects
   function listUpdate(){
     var userList = [];
     onlineUsers.forEach(function(user){

@@ -23,7 +23,7 @@ form button {
   padding: 5px 10px;
 }
 #messages li:nth-child(odd) {
- background: #eee; 
+ background: #eee;
 }
 #messages li.connected {
  background: #080;
